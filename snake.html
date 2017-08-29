@@ -1,0 +1,250 @@
+<html> 
+    <head>
+        <meta charset="utf-8">
+        <title>贪吃蛇</title>
+    </head>
+    <style>
+        body{
+            width: 500px;
+            margin: 0 auto;
+        }
+        #app{
+            position: relative;
+            border: 10px solid #ccc;
+            width: 500px;
+            height: 500px;
+            margin: 0 auto 20px;
+        }
+        #app .snake{
+            position: absolute;
+            background: #ccc;
+            width: 10px; 
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            height: 10px;
+        }
+        #app .food{
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: red;
+        }
+        p{
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        a{
+            display: inline-block;
+            width: 200px;
+            height: 40px;
+            line-height: 40px;
+            background: #5B86E6;
+            text-align: center;
+            margin: 0 auto;
+        
+        }
+    </style>
+    <body>
+        <div id="app">
+        </div>
+        <p>得分: <span id="count">0</span></p>
+        <div style="text-align: center;">
+            <a id="stop">暂停</a>
+            <a id="restart">重新开始</a>
+        </div>
+    </body>
+    
+    <script src="http://i.mimoprint.com/static/mimoscript/jquery"></script>
+    <script>
+        function drawSnake(){
+            var s = '';
+            for(var i = 0; i<snake.length; i++){
+                s += '<div class="snake" style="left: '+snake[i][0]+'px; top: '+ snake[i][1] +'px;"></div>';
+            }
+            return s;
+        }
+        var Game = {
+            snake: [],
+            food: [],
+            dir: "e", //N北 S南 W西 E东
+            curr: 0,
+            speed: 70,
+            timer: null,
+            stop: false,
+            isOver: false,
+            init: function (){
+                this.initSnake();
+                this.Event();
+                this.timer = setInterval(this.move, this.speed - this.curr*5);
+            },
+            Event: function (){
+                $("body").keydown(function (e){
+                    switch(e.keyCode){
+                        case 38:
+                            Game.dir = Game.dir == "s"? 's': 'n';
+                            break;
+                        case 40:
+                            Game.dir = Game.dir == "n"? 'n': 's';
+                            break;    
+                        case 37:
+                            Game.dir = Game.dir == "e"? 'e': 'w';
+                            break;
+                        case 39: 
+                            Game.dir = Game.dir == "w"? 'w': 'e';
+                            break;
+                    }
+                })
+
+                $("#stop").click(function (){
+                    if(Game.isOver){
+                        Game.restart();
+                    }
+                    else{
+                        if(Game.stop){
+                            Game.stop = false;
+                            $(this).text("暂停");
+                            Game.timer = setInterval(Game.move, Game.speed - Game.curr*5);
+                        }
+                        else{
+                            Game.stop = true;
+                            $(this).text("继续");
+                            clearInterval(Game.timer);
+                        }
+                    }
+                })
+                $("#restart").click(function (){
+                    Game.restart();
+                })
+            },
+            initSnake: function (){
+                var x = Math.ceil(Math.random() * 35) * 10;
+                var y = Math.ceil(Math.random() * 35) * 10;
+                var snake = [];
+                for(var i = 0; i < 5; i++){
+                    snake.push([x+i*10,y])
+                }
+                Game.snake = snake;
+                Game.randomFood();
+            },
+            move: function (){
+                Game.checkEat();
+            },
+            checkEat: function (){
+                var snake = Game.snake;
+                var lastItem = Game.snake[snake.length-1];
+                var food = Game.food;
+                var isEat = false;
+                Game.checkMove(function (){
+                    switch(Game.dir){
+                        case 'n': //上
+                            if([lastItem[0] == food[0] && lastItem[1]-10] == food[1]){
+                                isEat = true;
+                            }
+                            Game.snake.push([lastItem[0],lastItem[1]-10]);
+                            break;
+                        case 's': //下
+                            if([lastItem[0] == food[0] && lastItem[1]+10] == food[1]){
+                                isEat = true;
+                            }
+                            Game.snake.push([lastItem[0],lastItem[1]+10]);
+                            break;
+                        case 'w': //左
+                            if([lastItem[0]-10 == food[0] && lastItem[1]] == food[1]){
+                                isEat = true;
+                            }
+                            Game.snake.push([lastItem[0]-10,lastItem[1]]);
+                            break;
+                        case 'e': //右
+                            if([lastItem[0]+10 == food[0] && lastItem[1]] == food[1]){
+                                isEat = true;
+                            }
+                            Game.snake.push([lastItem[0]+10,lastItem[1]]);
+                            break;
+                    }
+                    if(!isEat){
+                        Game.snake.shift();
+                    }
+                    else{
+                        Game.randomFood();
+                    }
+                    Game.draw();
+                })
+            },
+            checkMove: function (callback){
+                var snake = this.snake;
+                var last = this.snake[this.snake.length-1];
+                var over = false;
+                for(var i = 0; i<snake.length-1; i++){
+                    if(last[0] == snake[i][0] && last[1] == snake[i][1]){
+                        over = true;
+                    }
+                }
+                if(last[0] <= 0 || last[1] <= 0 ){
+                    over = true;
+                }
+                if(last[0] > 490){
+                    over = true;
+                }
+                if(last[1] > 490){
+                    over = true;
+                }
+                if(!over){
+                    callback()
+                }
+                else{
+                    Game.over();
+                }
+            },
+            randomFood: function (){
+                var x = Math.ceil(Math.random() * 49) * 10;
+                var y = Math.ceil(Math.random() * 49) * 10;
+                var snake = Game.snake;
+
+                for(var i = 0; i < snake.length; i++){
+                    if(x == snake[i][0] && y == snake[i][1]){
+                        Game.randomFood();
+                    }
+                }
+                Game.food = [x,y];
+            },
+            drawSnake: function(){
+                var snake = this.snake;
+                var s = '';
+                for(var i = 0; i<snake.length; i++){
+                    s += '<div class="snake" style="left: '+snake[i][0]+'px; top: '+ snake[i][1] +'px;"></div>';
+                }
+                return s;
+            },
+            drawFood: function(){
+                var food = this.food;
+                return '<div class="food" style="left: '+food[0]+'px; top: '+ food[1] +'px;"></div>';
+            },
+            draw: function (){
+                var len = this.snake.length;
+                if(len - 5 > 0 && len - 5 < 40){
+                    Game.curr = parseInt(len/5);
+                }
+                var snake = this.drawSnake();
+                var food = this.drawFood();
+                $("#count").text(len-5);
+                $("#app").empty().append(snake).append(food);
+            },
+            over: function (){
+                alert("你死啦");
+                $("#stop").text("开始");
+                Game.stop = true;
+                Game.isOver = true;
+                clearInterval(this.timer);
+            },
+            restart: function (){
+                $("#stop").text("暂停");
+                Game.isOver = false;
+                Game.stop = false;
+                this.initSnake();
+                clearInterval(Game.timer);
+                this.timer = setInterval(this.move, this.speed - this.curr*5);
+            },
+        };
+        Game.init();
+    </script>
+</html>
